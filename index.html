@@ -77,7 +77,7 @@
   }
   #preview-wrap:fullscreen{background:#000;padding:0}
   #canvas{
-    max-width:100%;max-height:100%;aspect-ratio:16/9;background:#000;
+    touch-action:none;max-width:100%;max-height:100%;aspect-ratio:16/9;background:#000;
     border-radius:var(--radius);box-shadow:0 6px 28px rgba(0,0,0,.5);display:block;
   }
   #preview-wrap:fullscreen #canvas{border-radius:0;box-shadow:none}
@@ -99,18 +99,18 @@
 
   /* ---- timeline ---- */
   #timeline{
-    flex:0 0 180px;height:180px;background:var(--panel);border-top:1px solid var(--border);
+    flex:0 0 200px;height:200px;background:var(--panel);border-top:1px solid var(--border);
     display:flex;flex-direction:column;min-height:0;
   }
   #tl-head{
     display:flex;align-items:center;gap:8px;padding:5px 10px;border-bottom:1px solid var(--border);
     font-size:12px;color:var(--muted);flex:0 0 auto;
   }
-  #tl-scroll{flex:1;overflow-x:auto;overflow-y:hidden;position:relative;min-height:0}
-  #tl-inner{position:relative;height:100%;min-width:100%}
-  #ruler{position:absolute;top:0;left:0;height:22px;display:block}
-  #lane-clips{position:absolute;top:26px;height:64px;left:0;right:0}
-  #lane-subs{position:absolute;top:96px;height:30px;left:0;right:0}
+  #tl-scroll{flex:1;overflow-x:auto;overflow-y:auto;position:relative;min-height:0}
+  #tl-inner{position:relative;min-width:100%}
+  #ruler{position:absolute;top:0;left:0;height:22px;display:block;z-index:12}
+  #lane-clips{position:absolute;top:24px;height:50px;left:0;right:0}
+  #lane-fx,#lane-subs{position:absolute;left:0;right:0}
   .lane-label{
     position:absolute;left:4px;top:-1px;font-size:10px;color:#5d6577;pointer-events:none;
     letter-spacing:.3px;text-transform:uppercase;
@@ -135,7 +135,7 @@
   .clip .h:hover{background:rgba(255,255,255,.42)}
   .clip .h.l{left:0} .clip .h.r{right:0}
   .sub{
-    position:absolute;top:2px;height:24px;border-radius:5px;background:#3c6b4e;
+    position:absolute;height:20px;border-radius:5px;background:#3c6b4e;
     border:1px solid #4f8b66;cursor:grab;user-select:none;overflow:hidden;
   }
   .sub.sel{border:2px solid #fff}
@@ -145,8 +145,20 @@
   }
   .sub .h{position:absolute;top:0;bottom:0;width:6px;cursor:ew-resize;background:rgba(255,255,255,.16)}
   .sub .h.l{left:0} .sub .h.r{right:0}
+  .fx{
+    position:absolute;height:20px;border-radius:5px;background:#6b4fc4;border:1px solid #8f75e6;
+    cursor:grab;user-select:none;overflow:hidden;
+  }
+  .fx.sel{border:2px solid #fff}
+  .fx span{
+    position:absolute;left:8px;right:8px;top:3px;font-size:10px;color:#efe9ff;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  }
+  .fx .h{position:absolute;top:0;bottom:0;width:6px;cursor:ew-resize;background:rgba(255,255,255,.18)}
+  .fx .h:hover{background:rgba(255,255,255,.45)}
+  .fx .h.l{left:0} .fx .h.r{right:0}
   #playhead{
-    position:absolute;top:0;bottom:0;width:1px;background:#ff5e5e;pointer-events:none;z-index:10;
+    position:absolute;top:0;bottom:0;width:1px;background:#ff5e5e;pointer-events:none;z-index:13;
     will-change:transform;
   }
   #playhead::before{
@@ -185,6 +197,25 @@
   }
   .fx-params .row:last-child{margin-bottom:0}
   .hint{color:#6d758a;font-size:11px;line-height:1.55;margin-top:6px}
+  details.sec{border:1px solid var(--border);border-radius:var(--radius);margin-bottom:8px;background:#141820}
+  details.sec > summary{
+    cursor:pointer;padding:8px 10px;font-size:12px;color:var(--text);list-style:none;
+    display:flex;align-items:center;gap:6px;user-select:none;
+  }
+  details.sec > summary::-webkit-details-marker{display:none}
+  details.sec > summary::before{
+    content:"";width:6px;height:6px;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);
+    transform:rotate(-45deg);transition:transform var(--ease);margin-right:2px;
+  }
+  details.sec[open] > summary::before{transform:rotate(45deg)}
+  details.sec > summary:hover{background:#1a1f28;border-radius:var(--radius)}
+  .sec-body{padding:4px 10px 10px}
+  .presets{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+  button.preset{
+    padding:9px 4px;background:#0d0f14;border:1px solid var(--border);font-size:15px;
+    display:flex;align-items:center;justify-content:center;min-height:42px;
+  }
+  button.preset:hover:not(:disabled){border-color:var(--accent);background:#10131a}
   .check{display:flex;align-items:center;gap:7px;color:var(--muted);cursor:pointer}
 
   /* ---- toast / modal ---- */
@@ -213,7 +244,7 @@
   @media (max-width:900px){
     #main{flex-direction:column-reverse}
     #inspector{flex:0 0 auto;width:100%;max-height:44vh;border-right:0;border-top:1px solid var(--border)}
-    #timeline{flex:0 0 150px;height:150px}
+    #timeline{flex:0 0 210px;height:210px}
   }
 </style>
 </head>
@@ -271,6 +302,7 @@
       <div id="tl-inner">
         <canvas id="ruler" height="22"></canvas>
         <div id="lane-clips"><div class="lane-label">클립</div></div>
+        <div id="lane-fx"><div class="lane-label">효과</div></div>
         <div id="lane-subs"><div class="lane-label">자막</div></div>
         <div id="playhead"></div>
       </div>
@@ -291,24 +323,72 @@ const REF_H = 1080;               // 자막 크기·블러 반경의 기준 높�
 const MIN_CLIP = 0.1;
 const HISTORY_MAX = 50;
 const EFFECTS = [
-  { type:'fadeIn',    label:'페이드 인',  def:{ dur:0.6 } },
-  { type:'fadeOut',   label:'페이드 아웃', def:{ dur:0.6 } },
+  { type:'fadeIn',    label:'페이드 인',  def:{} },
+  { type:'fadeOut',   label:'페이드 아웃', def:{} },
   { type:'grayscale', label:'흑백',      def:{} },
   { type:'sepia',     label:'세피아',     def:{} },
-  { type:'blur',      label:'블러',      def:{ amount:6 } },
-  { type:'kenburns',  label:'켄번즈 줌',  def:{ dir:'in', zoom:1.2 } },
+  { type:'blur',      label:'블러',      def:{ amount:8 } },
+  { type:'kenburns',  label:'켄번즈 줌',  def:{ dir:'in', zoom:1.3 } },
   { type:'shake',     label:'셰이크',     def:{ level:'mid' } },
 ];
+const EFFECT_LABEL = Object.fromEntries(EFFECTS.map(e => [e.type, e.label]));
 const ADJ_DEF = { brightness:100, contrast:100, saturation:100, temperature:0, vignette:0 };
-const SUB_STYLE_DEF = {
-  size:54, color:'#ffffff', stroke:'#000000', strokeWidth:4,
-  bg:false, bgOpacity:55, pos:'bottom', align:'center', bold:true, italic:false
+
+// 글꼴 이름에 큰따옴표를 쓰지 않는 이유: 같은 문자열이 HTML style="" 속성에도 들어간다.
+const FONTS = {
+  gothic:  { label:'고딕',     stack:"system-ui,'Apple SD Gothic Neo','Malgun Gothic','Noto Sans KR',sans-serif" },
+  serif:   { label:'명조',     stack:"'Noto Serif KR','Nanum Myeongjo','Batang','Apple Myungjo',serif" },
+  display: { label:'굵은 제목', stack:"Impact,'Arial Black','Malgun Gothic',sans-serif" },
+  hand:    { label:'손글씨',   stack:"'Nanum Pen Script','Segoe Script','Bradley Hand','Comic Sans MS',cursive" },
+  mono:    { label:'고정폭',   stack:"'D2Coding',Consolas,'Courier New',monospace" },
+  round:   { label:'둥근 고딕', stack:"'Nanum Gothic','Arial Rounded MT Bold','Trebuchet MS','Malgun Gothic',sans-serif" },
 };
+const SUB_ANIMS = [
+  ['none','없음'], ['fade','페이드'], ['pop','팝'], ['slideUp','슬라이드 업'], ['typewriter','타자기']
+];
+// x, y 는 자막 블록 중심의 화면 비율(0~1). null 이면 pos(상/중/하)로 자동 배치한다.
+const SUB_STYLE_DEF = {
+  font:'gothic', size:54, color:'#ffffff', gradient:false, color2:'#ffd166',
+  stroke:'#000000', strokeWidth:4, spacing:0,
+  shadow:false, shadowColor:'#000000', shadowBlur:6, shadowX:3, shadowY:3,
+  glow:false, glowColor:'#00e5ff', glowBlur:18,
+  bg:false, bgColor:'#000000', bgOpacity:55,
+  pos:'bottom', x:null, y:null, align:'center',
+  bold:true, italic:false, anim:'none'
+};
+const SUB_PRESETS = [
+  { id:'basic', label:'기본', css:"color:#fff;font-weight:700;text-shadow:-1px -1px 0 #000,1px -1px 0 #000,-1px 1px 0 #000,1px 1px 0 #000",
+    style:{} },
+  { id:'box', label:'박스', css:"color:#fff;font-weight:700;background:rgba(0,0,0,.72);border-radius:3px;padding:0 6px",
+    style:{ size:50, strokeWidth:0, bg:true, bgColor:'#000000', bgOpacity:72 } },
+  { id:'neon', label:'네온', css:"color:#fff;font-weight:700;text-shadow:0 0 5px #ff2bd6,0 0 12px #ff2bd6,0 0 22px #ff2bd6",
+    style:{ size:62, strokeWidth:0, glow:true, glowColor:'#ff2bd6', glowBlur:26, anim:'fade' } },
+  { id:'comic', label:'만화', css:"font-family:Impact,sans-serif;color:#ffe14d;text-shadow:-1px -1px 0 #111,1px -1px 0 #111,-1px 1px 0 #111,1px 1px 0 #111,3px 3px 0 #000",
+    style:{ font:'display', size:68, color:'#ffe14d', stroke:'#111111', strokeWidth:9, bold:false,
+            shadow:true, shadowColor:'#000000', shadowBlur:0, shadowX:6, shadowY:6, anim:'pop' } },
+  { id:'retro', label:'레트로', css:"font-weight:900;font-style:italic;background:linear-gradient(#fff27a,#ff5fa2);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent",
+    style:{ size:64, color:'#fff27a', gradient:true, color2:'#ff5fa2', stroke:'#3a0d4a', strokeWidth:7,
+            shadow:true, shadowColor:'#7a2bd6', shadowBlur:0, shadowX:5, shadowY:5, italic:true, anim:'slideUp' } },
+  { id:'cinema', label:'시네마', css:"font-family:serif;font-style:italic;color:#f4efe3;letter-spacing:1px",
+    style:{ font:'serif', size:48, color:'#f4efe3', strokeWidth:0, bold:false, italic:true, spacing:3,
+            shadow:true, shadowColor:'#000000', shadowBlur:10, shadowX:0, shadowY:2, anim:'fade' } },
+  { id:'typewriter', label:'타자기', css:"font-family:Consolas,monospace;color:#b8ffb8;background:#0a0f0a;padding:0 5px",
+    style:{ font:'mono', size:44, color:'#b8ffb8', strokeWidth:0, bold:false,
+            bg:true, bgColor:'#0a0f0a', bgOpacity:82, anim:'typewriter' } },
+  { id:'hand', label:'손글씨', css:"font-family:'Segoe Script','Comic Sans MS',cursive;color:#fff;text-shadow:-1px -1px 0 #2b2b2b,1px 1px 0 #2b2b2b",
+    style:{ font:'hand', size:66, stroke:'#2b2b2b', strokeWidth:5, bold:false, anim:'slideUp' } },
+];
+function applyPreset(st, preset){
+  const keep = { pos:st.pos, x:st.x, y:st.y, align:st.align };   // 위치는 프리셋이 건드리지 않는다
+  for (const k of Object.keys(st)) delete st[k];
+  Object.assign(st, JSON.parse(JSON.stringify(SUB_STYLE_DEF)), preset.style, keep);
+}
 
 /* ═══ 상태 ═══ */
 const project = {
   clips: [],
   subtitles: [],
+  effects: [],                    // 구간 효과: { id, type, start, end, ...params } — 타임라인 전역 시간
   adjustments: { ...ADJ_DEF },
   sources: Object.create(null)
 };
@@ -330,6 +410,7 @@ const canvas = $('#canvas');
 const ctx = canvas.getContext('2d', { alpha:false });
 const inspector = $('#inspector');
 const laneClips = $('#lane-clips');
+const laneFx    = $('#lane-fx');
 const laneSubs  = $('#lane-subs');
 const ruler     = $('#ruler');
 const rctx      = ruler.getContext('2d');
@@ -410,6 +491,7 @@ function snapshot(){
   return JSON.stringify({
     clips: project.clips,
     subtitles: project.subtitles,
+    effects: project.effects,
     adjustments: project.adjustments
   });
 }
@@ -425,9 +507,10 @@ function applySnap(json){
   const s = JSON.parse(json);
   project.clips = s.clips;
   project.subtitles = s.subtitles;
+  project.effects = s.effects || [];
   project.adjustments = s.adjustments;
   lastSnap = json;
-  if (selection.id && !findClip(selection.id) && !findSub(selection.id)) selection = { type:null, id:null };
+  if (selection.id && !findClip(selection.id) && !findSub(selection.id) && !findEffect(selection.id)) selection = { type:null, id:null };
   playhead = clamp(playhead, 0, totalDur());
   refreshAll();
 }
@@ -450,6 +533,7 @@ function syncHistoryButtons(){
 
 const findClip = id => project.clips.find(c => c.id === id) || null;
 const findSub  = id => project.subtitles.find(s => s.id === id) || null;
+const findEffect = id => project.effects.find(e => e.id === id) || null;
 
 /* ═══ 오디오 그래프 ═══
    내보내기 중 클립이 바뀌어도 MediaRecorder에 물린 오디오 트랙은 교체할 수 없다.
@@ -494,7 +578,7 @@ async function addFiles(fileList){
       project.sources[src.id] = src;
       project.clips.push({
         id: uid('clip'), srcId: src.id,
-        inPoint: 0, outPoint: src.duration, speed: 1, effects: []
+        inPoint: 0, outPoint: src.duration, speed: 1
       });
       added++;
     } catch(err){
@@ -557,12 +641,21 @@ function containRect(vw, vh, W, H){
   return { x:(W - w) / 2, y:(H - h) / 2, w, h };
 }
 
-/* ═══ 효과 (모두 진행도 0~1 을 받는 순수 함수) ═══ */
-const fxMap = clip => {
+/* ═══ 구간 효과 ═══
+   효과는 클립이 아니라 타임라인 전역 시간에 붙는다. 그래서 컷·순서 변경을 해도 사용자가
+   지정한 "이 장면에서만" 이 어긋나지 않는다(자막과 같은 방식). 각 효과는 자기 구간의
+   진행도 p(0~1)를 받아 동작하며, 같은 종류가 겹치면 나중에 시작한 쪽이 이긴다. */
+function activeEffects(t){
   const m = Object.create(null);
-  for (const e of clip.effects) m[e.type] = e;
+  for (const e of project.effects){
+    if (t < e.start || t >= e.end) continue;
+    const cur = m[e.type];
+    if (!cur || e.start >= cur.start){
+      m[e.type] = { ...e, p:clamp((t - e.start) / Math.max(e.end - e.start, 1e-6), 0, 1) };
+    }
+  }
   return m;
-};
+}
 function buildFilter(fx, H){
   const a = project.adjustments;
   let f = `brightness(${a.brightness}%) contrast(${a.contrast}%) saturate(${a.saturation}%)`;
@@ -571,11 +664,10 @@ function buildFilter(fx, H){
   if (fx.blur && fx.blur.amount > 0) f += ` blur(${(fx.blur.amount * H / REF_H).toFixed(2)}px)`;
   return f;
 }
-function kenBurnsRect(fx, progress, vw, vh){
+function kenBurnsRect(fx, vw, vh){
   const e = fx.kenburns;
   if (!e) return { x:0, y:0, w:vw, h:vh };
-  const p = clamp(progress, 0, 1);
-  const z = e.dir === 'in' ? 1 + (e.zoom - 1) * p : e.zoom - (e.zoom - 1) * p;
+  const z = e.dir === 'in' ? 1 + (e.zoom - 1) * e.p : e.zoom - (e.zoom - 1) * e.p;
   const w = vw / z, h = vh / z;
   return { x:(vw - w) / 2, y:(vh - h) / 2, w, h };
 }
@@ -584,11 +676,11 @@ function shakeAmp(fx, H){
   if (!e) return 0;
   return ({ low:0.004, mid:0.009, high:0.018 }[e.level] || 0.009) * H;
 }
-function fadeAlpha(fx, local, dur){
+// 페이드 인은 구간 시작에 검정, 끝에 원본. 페이드 아웃은 그 반대.
+function fadeAlpha(fx){
   let a = 0;
-  const fi = fx.fadeIn, fo = fx.fadeOut;
-  if (fi && fi.dur > 0 && local < fi.dur) a = Math.max(a, 1 - local / fi.dur);
-  if (fo && fo.dur > 0 && local > dur - fo.dur) a = Math.max(a, 1 - (dur - local) / fo.dur);
+  if (fx.fadeIn)  a = Math.max(a, 1 - fx.fadeIn.p);
+  if (fx.fadeOut) a = Math.max(a, fx.fadeOut.p);
   return clamp(a, 0, 1);
 }
 
@@ -629,13 +721,13 @@ function renderFrame(c, t){
   if (loc){
     const src = project.sources[loc.clip.srcId];
     const v = src && src.videoEl;
-    const fx = fxMap(loc.clip);
+    const fx = activeEffects(t);
 
     // 시킹 중인 video 는 그릴 프레임이 없어 drawImage 가 조용히 아무것도 안 그린다.
     // 그 순간 화면이 검게 깜빡이지 않도록 마지막 성한 프레임을 캐시해 두고 대신 그린다.
     const painter = pickPainter(src, v);
     if (painter && v && v.videoWidth){
-      const sr = kenBurnsRect(fx, loc.progress, v.videoWidth, v.videoHeight);
+      const sr = kenBurnsRect(fx, v.videoWidth, v.videoHeight);
       const amp = shakeAmp(fx, H);
       const base = containRect(v.videoWidth, v.videoHeight, W, H);
       // 셰이크는 화면을 흔들므로 가장자리에 빈 틈이 생기지 않도록 목적지 사각형을 미리 넓힌다.
@@ -675,7 +767,7 @@ function renderFrame(c, t){
       c.restore();
     }
 
-    const fa = fadeAlpha(fx, loc.local, loc.dur);
+    const fa = fadeAlpha(fx);
     if (fa > 0){
       c.save();
       c.globalAlpha = fa;
@@ -687,63 +779,167 @@ function renderFrame(c, t){
   drawSubtitles(c, t, W, H);
 }
 
-function drawSubtitles(c, t, W, H){
-  const active = project.subtitles.filter(s => t >= s.start && t < s.end && s.text.trim());
-  if (!active.length) return;
-  const scale = H / REF_H;
-  const groups = { top:[], middle:[], bottom:[] };
-  for (const s of active) groups[s.style.pos || 'bottom'].push(s);
+/* ═══ 자막 ═══
+   자막은 (1) 레이아웃 → (2) 배치 → (3) 그리기 세 단계로 나눈다. 배치를 따로 빼 둔 덕에
+   "마우스로 옮긴 자막(x,y 지정)" 과 "상/중/하 자동 배치(겹치면 쌓기)" 를 같은 그리기 코드로 처리한다. */
+const subRects = [];   // 마지막으로 그린 프레임의 자막 사각형(0~1 정규화) — 마우스 히트테스트용
+let subGuide = null;   // 드래그 중 중앙 스냅 가이드 { x, y }
 
-  for (const pos of ['top','middle','bottom']){
+const fontStr = (st, px) => `${st.italic ? 'italic ' : ''}${st.bold ? '700' : '400'} ${px}px ${(FONTS[st.font] || FONTS.gothic).stack}`;
+const setSpacing = (c, px) => { if ('letterSpacing' in c) c.letterSpacing = px + 'px'; };
+function hexA(hex, a){
+  const n = parseInt(String(hex).slice(1), 16) || 0;
+  return `rgba(${n >> 16 & 255},${n >> 8 & 255},${n & 255},${a})`;
+}
+const easeOutCubic = x => 1 - Math.pow(1 - x, 3);
+const easeOutBack = x => { const c1 = 1.70158, c3 = c1 + 1; return 1 + c3 * Math.pow(x - 1, 3) + c1 * Math.pow(x - 1, 2); };
+
+function layoutSub(c, s, W, H){
+  const st = s.style, scale = H / REF_H, fs = st.size * scale;
+  c.font = fontStr(st, fs);
+  setSpacing(c, st.spacing * scale);
+  const lines = wrapLines(c, s.text, W * 0.9);
+  let maxW = 0;
+  for (const ln of lines) maxW = Math.max(maxW, c.measureText(ln).width);
+  const pad = fs * 0.28, lh = fs * 1.24;
+  return { s, st, lines, fs, lh, pad, scale, w:maxW + pad * 2, h:lines.length * lh + pad * 1.4, bx:0, by:0 };
+}
+function placeBlocks(blocks, W, H){
+  const groups = { top:[], middle:[], bottom:[] };
+  for (const b of blocks){
+    const st = b.st;
+    if (st.x == null || st.y == null) groups[st.pos in groups ? st.pos : 'bottom'].push(b);
+    else { b.bx = st.x * W - b.w / 2; b.by = st.y * H - b.h / 2; }
+  }
+  const margin = H * 0.04, gap = H * 0.008;
+  for (const pos in groups){
     const list = groups[pos];
     if (!list.length) continue;
-    const blocks = list.map(s => {
-      const st = s.style;
-      const fs = st.size * scale;
-      c.font = `${st.italic ? 'italic ' : ''}${st.bold ? '700' : '400'} ${fs}px system-ui, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif`;
-      const lines = wrapLines(c, s.text, W * 0.9);
-      return { s, lines, fs, lh: fs * 1.24 };
-    });
-    const totalH = blocks.reduce((a, b) => a + b.lines.length * b.lh + b.fs * 0.34, 0);
-    const margin = H * 0.055;
-    let y = pos === 'top' ? margin
-          : pos === 'middle' ? (H - totalH) / 2
-          : H - margin - totalH;
-
-    for (const b of blocks){
-      const st = b.s.style;
-      c.save();
-      c.font = `${st.italic ? 'italic ' : ''}${st.bold ? '700' : '400'} ${b.fs}px system-ui, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif`;
-      c.textBaseline = 'top';
-      c.textAlign = st.align;
-      const x = st.align === 'left' ? W * 0.05 : st.align === 'right' ? W * 0.95 : W / 2;
-
-      if (st.bg){
-        const pad = b.fs * 0.28;
-        let maxW = 0;
-        for (const ln of b.lines) maxW = Math.max(maxW, c.measureText(ln).width);
-        const bw = maxW + pad * 2, bh = b.lines.length * b.lh + pad * 1.4;
-        const bx = st.align === 'left' ? x - pad : st.align === 'right' ? x - bw + pad : x - bw / 2;
-        c.fillStyle = `rgba(0,0,0,${(st.bgOpacity / 100).toFixed(3)})`;
-        roundRect(c, bx, y - pad * 0.7, bw, bh, b.fs * 0.16);
-        c.fill();
-      }
-      let ly = y;
-      for (const ln of b.lines){
-        if (st.strokeWidth > 0){
-          c.lineJoin = 'round'; c.miterLimit = 2;
-          c.lineWidth = st.strokeWidth * scale * 2;
-          c.strokeStyle = st.stroke;
-          c.strokeText(ln, x, ly);
-        }
-        c.fillStyle = st.color;
-        c.fillText(ln, x, ly);
-        ly += b.lh;
-      }
-      c.restore();
-      y += b.lines.length * b.lh + b.fs * 0.34;
+    const total = list.reduce((a, b) => a + b.h + gap, -gap);
+    let y = pos === 'top' ? margin : pos === 'middle' ? (H - total) / 2 : H - margin - total;
+    for (const b of list){
+      b.by = y;
+      b.bx = b.st.align === 'left' ? W * 0.05 : b.st.align === 'right' ? W * 0.95 - b.w : (W - b.w) / 2;
+      y += b.h + gap;
     }
   }
+}
+function subAnim(kind, local, dur, chars){
+  const r = { alpha:1, scale:1, dy:0, reveal:1 };
+  const inT = Math.max(Math.min(0.4, dur * 0.4), 0.04);
+  const pin = clamp(local / inT, 0, 1);
+  if (kind === 'fade') r.alpha = Math.min(pin, clamp((dur - local) / inT, 0, 1));
+  else if (kind === 'pop'){ r.alpha = Math.min(1, pin * 2); r.scale = 0.55 + 0.45 * easeOutBack(pin); }
+  else if (kind === 'slideUp'){ const e = easeOutCubic(pin); r.alpha = e; r.dy = (1 - e) * 0.8; }
+  else if (kind === 'typewriter'){
+    const span = Math.min(dur * 0.7, Math.max(0.4, chars * 0.07));
+    r.reveal = clamp(local / span, 0, 1);
+  }
+  return r;
+}
+function drawText(c, txt, x, y, st, scale, lh){
+  let fill = st.color;
+  if (st.gradient){
+    const g = c.createLinearGradient(0, y, 0, y + lh);
+    g.addColorStop(0, st.color); g.addColorStop(1, st.color2);
+    fill = g;
+  }
+  const outline = () => {
+    if (st.strokeWidth > 0){
+      c.lineJoin = 'round'; c.miterLimit = 2;
+      c.lineWidth = st.strokeWidth * scale * 2;
+      c.strokeStyle = st.stroke;
+      c.strokeText(txt, x, y);
+    }
+  };
+  const clearShadow = () => { c.shadowColor = 'transparent'; c.shadowBlur = 0; c.shadowOffsetX = 0; c.shadowOffsetY = 0; };
+  if (st.shadow){
+    c.shadowColor = st.shadowColor; c.shadowBlur = st.shadowBlur * scale;
+    c.shadowOffsetX = st.shadowX * scale; c.shadowOffsetY = st.shadowY * scale;
+    outline(); c.fillStyle = fill; c.fillText(txt, x, y);
+    clearShadow();
+  }
+  if (st.glow){
+    // 글로우는 한 번만 그리면 약해서 두 번 겹친다.
+    c.shadowColor = st.glowColor; c.shadowBlur = st.glowBlur * scale;
+    c.fillStyle = fill; c.fillText(txt, x, y); c.fillText(txt, x, y);
+    clearShadow();
+  }
+  outline(); c.fillStyle = fill; c.fillText(txt, x, y);
+}
+function drawBlock(c, b, t){
+  const { s, st, lines, fs, lh, pad, scale } = b;
+  const chars = lines.reduce((a, ln) => a + [...ln].length, 0);
+  const an = subAnim(st.anim, t - s.start, s.end - s.start, chars);
+  if (an.alpha <= 0.001) return;
+  c.save();
+  c.font = fontStr(st, fs);
+  setSpacing(c, st.spacing * scale);
+  c.textBaseline = 'top'; c.textAlign = 'left';
+  c.globalAlpha = an.alpha;
+  const cx = b.bx + b.w / 2, cy = b.by + b.h / 2;
+  c.translate(cx, cy + an.dy * fs);
+  c.scale(an.scale, an.scale);
+  c.translate(-cx, -cy);
+
+  if (st.bg){
+    c.fillStyle = hexA(st.bgColor, (st.bgOpacity / 100).toFixed(3));
+    roundRect(c, b.bx, b.by, b.w, b.h, fs * 0.16);
+    c.fill();
+  }
+  // 정렬은 항상 left 로 그리고 x 를 직접 계산한다 — 타자기 애니메이션에서 글자가
+  // 하나씩 늘어날 때 가운데 정렬 텍스트가 좌우로 출렁이지 않게 하려고.
+  let left = Math.floor(chars * an.reveal + 1e-6);
+  lines.forEach((ln, i) => {
+    const glyphs = [...ln];
+    const shown = glyphs.slice(0, Math.max(0, left)).join('');
+    left -= glyphs.length;
+    if (!shown) return;
+    const full = c.measureText(ln).width;
+    const x = st.align === 'left' ? b.bx + pad
+            : st.align === 'right' ? b.bx + b.w - pad - full
+            : b.bx + (b.w - full) / 2;
+    drawText(c, shown, x, b.by + pad * 0.7 + i * lh, st, scale, lh);
+  });
+  c.restore();
+}
+function drawSubtitles(c, t, W, H){
+  subRects.length = 0;
+  const active = project.subtitles.filter(s => t >= s.start && t < s.end && s.text.trim());
+  if (!active.length) return;
+  c.save();
+  const blocks = active.map(s => layoutSub(c, s, W, H));
+  placeBlocks(blocks, W, H);
+  for (const b of blocks){
+    drawBlock(c, b, t);
+    subRects.push({ id:b.s.id, x:b.bx / W, y:b.by / H, w:b.w / W, h:b.h / H });
+  }
+  c.restore();
+}
+// 선택 표시선·스냅 가이드 — 프리뷰에만 그린다. 내보내기 중에는 tick 이 호출하지 않는다.
+function drawSubOverlay(c){
+  if (selection.type !== 'subtitle') return;
+  const r = subRects.find(q => q.id === selection.id);
+  if (!r) return;
+  const W = c.canvas.width, H = c.canvas.height, u = Math.max(1, W / 900);
+  c.save();
+  c.setTransform(1, 0, 0, 1, 0, 0);
+  c.globalAlpha = 1; c.filter = 'none'; c.globalCompositeOperation = 'source-over';
+  c.lineWidth = 2 * u;
+  if (subGuide && (subGuide.x || subGuide.y)){
+    c.strokeStyle = 'rgba(255,94,94,.95)'; c.setLineDash([6 * u, 5 * u]);
+    c.beginPath();
+    if (subGuide.x){ c.moveTo(W / 2, 0); c.lineTo(W / 2, H); }
+    if (subGuide.y){ c.moveTo(0, H / 2); c.lineTo(W, H / 2); }
+    c.stroke();
+  }
+  c.setLineDash([7 * u, 4 * u]); c.strokeStyle = '#5b8cff';
+  c.strokeRect(r.x * W, r.y * H, r.w * W, r.h * H);
+  c.setLineDash([]); c.fillStyle = '#5b8cff';
+  for (const [hx, hy] of [[r.x, r.y], [r.x + r.w, r.y], [r.x, r.y + r.h], [r.x + r.w, r.y + r.h]]){
+    c.fillRect(hx * W - 3 * u, hy * H - 3 * u, 6 * u, 6 * u);
+  }
+  c.restore();
 }
 function wrapLines(c, text, maxW){
   const out = [];
@@ -780,6 +976,7 @@ function tick(){
   if (playing) advanceByMedia();
   syncVideo();
   renderFrame(ctx, playhead);
+  if (!exporting) drawSubOverlay(ctx);
   updateTransport();
   if (exporting) updateExportProgress();
   requestAnimationFrame(tick);
@@ -926,6 +1123,40 @@ function drawRuler(){
 
 const clipEls = new Map();
 const subEls  = new Map();
+const fxEls   = new Map();
+const LANE = { clipTop:24, clipH:50, row:24, gap:4 };
+
+// 겹치는 구간은 다른 줄로 내려 보낸다 — 한 줄에 겹쳐 그리면 아래 막대를 못 집는다.
+function packRows(items){
+  const order = items.slice().sort((a, b) => a.start - b.start || a.end - b.end);
+  const ends = [], rowOf = new Map();
+  for (const it of order){
+    let r = ends.findIndex(e => e <= it.start + 1e-6);
+    if (r < 0){ r = ends.length; ends.push(0); }
+    ends[r] = it.end;
+    rowOf.set(it.id, r);
+  }
+  return { rowOf, rows:Math.max(1, ends.length) };
+}
+function syncBars(lane, cache, items, cls, rowOf, selType, label){
+  const seen = new Set();
+  for (const it of items){
+    let el = cache.get(it.id);
+    if (!el){
+      el = document.createElement('div');
+      el.className = cls; el.dataset.id = it.id;
+      el.innerHTML = '<span></span><div class="h l" data-edge="l"></div><div class="h r" data-edge="r"></div>';
+      lane.appendChild(el); cache.set(it.id, el);
+    }
+    el.style.left  = (it.start * pxPerSec) + 'px';
+    el.style.width = Math.max((it.end - it.start) * pxPerSec, 8) + 'px';
+    el.style.top   = (rowOf.get(it.id) * LANE.row + 2) + 'px';
+    el.classList.toggle('sel', selection.type === selType && selection.id === it.id);
+    el.firstChild.textContent = label(it);
+    seen.add(it.id);
+  }
+  for (const [id, el] of cache) if (!seen.has(id)){ el.remove(); cache.delete(id); }
+}
 function renderTimeline(){
   drawRuler();
   // 클립 — DOM 노드를 id 로 재사용해 30분짜리 타임라인에서도 재생성 비용이 들지 않게 한다.
@@ -958,24 +1189,14 @@ function renderTimeline(){
   }
   for (const [id, el] of clipEls) if (!seen.has(id)){ el.remove(); clipEls.delete(id); }
 
-  const seenS = new Set();
-  for (const s of project.subtitles){
-    let el = subEls.get(s.id);
-    if (!el){
-      el = document.createElement('div');
-      el.className = 'sub';
-      el.dataset.id = s.id;
-      el.innerHTML = '<span></span><div class="h l" data-edge="l"></div><div class="h r" data-edge="r"></div>';
-      laneSubs.appendChild(el);
-      subEls.set(s.id, el);
-    }
-    el.style.left  = (s.start * pxPerSec) + 'px';
-    el.style.width = Math.max((s.end - s.start) * pxPerSec, 8) + 'px';
-    el.classList.toggle('sel', selection.type === 'subtitle' && selection.id === s.id);
-    el.querySelector('span').textContent = s.text.split('\n')[0] || '자막';
-    seenS.add(s.id);
-  }
-  for (const [id, el] of subEls) if (!seenS.has(id)){ el.remove(); subEls.delete(id); }
+  const fxPack = packRows(project.effects), subPack = packRows(project.subtitles);
+  const fxTop  = LANE.clipTop + LANE.clipH + LANE.gap, fxH = fxPack.rows * LANE.row;
+  const subTop = fxTop + fxH + LANE.gap,               subH = subPack.rows * LANE.row;
+  laneFx.style.top = fxTop + 'px';     laneFx.style.height = fxH + 'px';
+  laneSubs.style.top = subTop + 'px';  laneSubs.style.height = subH + 'px';
+  tlInner.style.height = Math.max(subTop + subH + 6, tlScroll.clientHeight) + 'px';
+  syncBars(laneFx, fxEls, project.effects, 'fx', fxPack.rowOf, 'effect', e => EFFECT_LABEL[e.type] || e.type);
+  syncBars(laneSubs, subEls, project.subtitles, 'sub', subPack.rowOf, 'subtitle', s => s.text.split('\n')[0] || '자막');
 }
 
 /* ═══ 선택 & 편집 동작 ═══ */
@@ -995,8 +1216,7 @@ function splitAtPlayhead(){
   const cut = c.inPoint + loc.local * c.speed;   // 소스 기준 절단점
   const right = {
     id: uid('clip'), srcId: c.srcId,
-    inPoint: cut, outPoint: c.outPoint, speed: c.speed,
-    effects: JSON.parse(JSON.stringify(c.effects))
+    inPoint: cut, outPoint: c.outPoint, speed: c.speed
   };
   c.outPoint = cut;
   project.clips.splice(loc.index + 1, 0, right);
@@ -1020,7 +1240,33 @@ function deleteSelected(){
     pushHistory();
     selection = { type:null, id:null };
     refreshAll();
+  } else if (selection.type === 'effect'){
+    const i = project.effects.findIndex(e => e.id === selection.id);
+    if (i < 0) return;
+    project.effects.splice(i, 1);
+    pushHistory();
+    selection = { type:null, id:null };
+    refreshAll();
   }
+}
+const sortRanges = () => {
+  project.subtitles.sort((a, b) => a.start - b.start);
+  project.effects.sort((a, b) => a.start - b.start);
+};
+function addEffect(type){
+  if (!project.clips.length || exporting) return;
+  const def = EFFECTS.find(e => e.type === type);
+  if (!def) return;
+  const total = totalDur();
+  let start = clamp(playhead, 0, Math.max(total - 0.2, 0));
+  let end = Math.min(start + 2, total);
+  if (end - start < 0.5){ end = total; start = Math.max(0, total - 2); }   // 끝자락에서 누르면 마지막 2초
+  const e = { id: uid('fx'), type, start, end, ...JSON.parse(JSON.stringify(def.def)) };
+  project.effects.push(e);
+  sortRanges();
+  pushHistory();
+  select('effect', e.id);
+  refreshAll();
 }
 function addSubtitle(){
   if (!project.clips.length) return;
@@ -1033,7 +1279,7 @@ function addSubtitle(){
     style: { ...SUB_STYLE_DEF }
   };
   project.subtitles.push(s);
-  project.subtitles.sort((a, b) => a.start - b.start);
+  sortRanges();
   pushHistory();
   select('subtitle', s.id);
   refreshAll();
@@ -1055,21 +1301,29 @@ const stamp = () => {
 };
 
 /* ═══ 속성 패널 ═══ */
-let panelKey = '';
+let panelKey = '', lastSel = '';
+const secOpen = { preset:true, font:true, fx:false, pos:true, anim:false };   // 자막 패널의 접힘 상태 기억
+const $i = id => inspector.querySelector('#' + id);
+
 function renderInspector(force){
   const key = `${selection.type}:${selection.id}:${project.clips.length}`;
   if (!force && key === panelKey){ syncInspectorValues(); return; }
   panelKey = key;
+  const selKey = selection.type + ':' + selection.id;
+  const keepScroll = selKey === lastSel ? inspector.scrollTop : 0;   // 같은 대상을 편집 중이면 스크롤 유지
+  lastSel = selKey;
 
   let html = '';
   if (selection.type === 'clip' && findClip(selection.id)) html += clipPanel(findClip(selection.id));
   else if (selection.type === 'subtitle' && findSub(selection.id)) html += subPanel(findSub(selection.id));
+  else if (selection.type === 'effect' && findEffect(selection.id)) html += fxPanel(findEffect(selection.id));
   else html += `<div class="block"><h3>선택 없음</h3><div class="empty-note">
-      타임라인에서 클립이나 자막을 선택하면 여기에 속성이 표시됩니다.<br>
+      타임라인에서 클립 · 효과 · 자막을 선택하면 여기에 속성이 표시됩니다.<br>
       아래 색보정은 영상 전체에 적용됩니다.</div></div>`;
 
-  html += adjPanel();
+  html += palettePanel() + adjPanel();
   inspector.innerHTML = html;
+  inspector.scrollTop = keepScroll;
   bindInspector();
 }
 function sliderRow(id, label, min, max, step, val, unit, def){
@@ -1080,6 +1334,19 @@ function sliderRow(id, label, min, max, step, val, unit, def){
       <input type="number" id="${id}-n" min="${min}" max="${max}" step="${step}" value="${val}">
     </div></div>`;
 }
+const colorRow = (id, label, val) => `<div class="row"><label>${label}</label><input type="color" id="${id}" value="${val}"></div>`;
+const checkRow = (id, label, on) => `<div class="row"><label class="check"><input type="checkbox" id="${id}" ${on ? 'checked' : ''}> ${label}</label></div>`;
+const segHtml = (id, opts, cur) => `<div class="seg" id="${id}">${opts.map(([v, l]) =>
+  `<button data-v="${v}" class="${cur === v ? 'on' : ''}">${l}</button>`).join('')}</div>`;
+const rangeRow = it => `<div class="grid2">
+  <div class="row"><label>시작<span class="v">${fmt(it.start)}</span></label>
+    <input type="number" id="rg-start" step="0.1" min="0" value="${it.start.toFixed(2)}"></div>
+  <div class="row"><label>종료<span class="v">${fmt(it.end)}</span></label>
+    <input type="number" id="rg-end" step="0.1" min="0" value="${it.end.toFixed(2)}"></div></div>`;
+function sec(id, title, inner){
+  return `<details class="sec" data-sec="${id}" ${secOpen[id] ? 'open' : ''}><summary>${title}</summary><div class="sec-body">${inner}</div></details>`;
+}
+
 function adjPanel(){
   const a = project.adjustments;
   return `<div class="block"><h3>색보정 · 전체 적용</h3>
@@ -1091,10 +1358,16 @@ function adjPanel(){
     <div class="hint">라벨을 더블클릭하면 기본값으로 돌아갑니다.</div>
   </div>`;
 }
+function palettePanel(){
+  return `<div class="block"><h3>효과 추가</h3>
+    <div class="chips">${EFFECTS.map(e => `<div class="chip" data-addfx="${e.type}">+ ${e.label}</div>`).join('')}</div>
+    <div class="hint">재생헤드 위치에서 2초 구간으로 들어갑니다. 타임라인 '효과' 줄의 막대를 끌어 위치를,
+      양 끝을 끌어 길이를 조절하세요. 그 구간에서만 적용됩니다.</div>
+  </div>`;
+}
 function clipPanel(c){
   const src = project.sources[c.srcId];
-  const m = fxMap(c);
-  let html = `<div class="block"><h3>클립</h3>
+  return `<div class="block"><h3>클립</h3>
     <div class="empty-note" style="padding:0 0 8px">
       ${esc(src ? src.name : '—')}<br>
       길이 ${fmt(clipDur(c))} · 원본 ${fmt(src ? src.duration : 0)}
@@ -1104,77 +1377,87 @@ function clipPanel(c){
       <button id="clip-split">여기서 분할</button>
       <button id="clip-del">삭제</button>
     </div>
-  </div>
-  <div class="block"><h3>효과</h3><div class="chips">`;
-  for (const e of EFFECTS){
-    html += `<div class="chip ${m[e.type] ? 'on' : ''}" data-fx="${e.type}">${e.label}</div>`;
+  </div>`;
+}
+function fxPanel(e){
+  let p = '';
+  const hints = {
+    fadeIn:'구간 시작은 검은 화면, 끝에서 원래 화면으로 밝아집니다.',
+    fadeOut:'구간 시작은 원래 화면, 끝에서 검은 화면이 됩니다.',
+    grayscale:'이 구간 안에서만 흑백이 됩니다.',
+    sepia:'이 구간 안에서만 세피아 톤이 됩니다.'
+  };
+  if (hints[e.type]) p += `<div class="hint" style="margin:0 0 10px">${hints[e.type]}</div>`;
+  if (e.type === 'blur') p += sliderRow('fx-blur','블러 반경',0,20,0.5,e.amount,'px',8);
+  if (e.type === 'kenburns'){
+    p += `<div class="row"><label>줌 방향</label>${segHtml('kb-dir', [['in','줌 인'],['out','줌 아웃']], e.dir)}</div>`
+       + sliderRow('fx-kbzoom','줌 배율',1,1.5,0.01,e.zoom,'x',1.3)
+       + `<div class="hint" style="margin:0 0 10px">구간이 끝나면 원래 크기로 돌아갑니다.</div>`;
   }
-  html += `</div>`;
-
-  if (m.fadeIn || m.fadeOut || m.blur || m.kenburns || m.shake){
-    html += `<div class="fx-params">`;
-    if (m.fadeIn)  html += sliderRow('fx-fadeIn','페이드 인 길이',0.1,3,0.1,m.fadeIn.dur,'초',0.6);
-    if (m.fadeOut) html += sliderRow('fx-fadeOut','페이드 아웃 길이',0.1,3,0.1,m.fadeOut.dur,'초',0.6);
-    if (m.blur)    html += sliderRow('fx-blur','블러 반경',0,20,0.5,m.blur.amount,'px',6);
-    if (m.kenburns){
-      html += `<div class="row"><label>줌 방향</label><div class="seg" id="kb-dir">
-        <button data-v="in" class="${m.kenburns.dir==='in'?'on':''}">줌 인</button>
-        <button data-v="out" class="${m.kenburns.dir==='out'?'on':''}">줌 아웃</button>
-      </div></div>` + sliderRow('fx-kbzoom','줌 배율',1,1.5,0.01,m.kenburns.zoom,'x',1.2);
-    }
-    if (m.shake){
-      html += `<div class="row"><label>셰이크 강도</label><div class="seg" id="shake-lv">
-        <button data-v="low"  class="${m.shake.level==='low'?'on':''}">약</button>
-        <button data-v="mid"  class="${m.shake.level==='mid'?'on':''}">중</button>
-        <button data-v="high" class="${m.shake.level==='high'?'on':''}">강</button>
-      </div></div>`;
-    }
-    html += `</div>`;
+  if (e.type === 'shake'){
+    p += `<div class="row"><label>셰이크 강도</label>${segHtml('shake-lv', [['low','약'],['mid','중'],['high','강']], e.level)}</div>`;
   }
-  return html + `</div>`;
+  return `<div class="block"><h3>효과 · ${EFFECT_LABEL[e.type]}</h3>
+    ${rangeRow(e)}
+    ${p}
+    <div class="grid2"><button id="fx-fit">클립 전체에 맞추기</button><button id="fx-del">삭제</button></div>
+  </div>`;
 }
 function subPanel(s){
   const st = s.style;
+  const custom = st.x != null && st.y != null;
+  const presets = SUB_PRESETS.map(p => `<button class="preset" data-preset="${p.id}"><span style="${p.css}">${p.label}</span></button>`).join('');
+  const fontOpts = Object.entries(FONTS).map(([k, f]) =>
+    `<option value="${k}" ${st.font === k ? 'selected' : ''} style="font-family:${f.stack}">${f.label}</option>`).join('');
+  const anims = SUB_ANIMS.map(([k, l]) => `<div class="chip ${st.anim === k ? 'on' : ''}" data-anim="${k}">${l}</div>`).join('');
+
   return `<div class="block"><h3>자막</h3>
-    <div class="row"><label>텍스트</label>
-      <textarea id="sub-text" rows="3">${esc(s.text)}</textarea></div>
-    <div class="grid2">
-      <div class="row"><label>시작<span class="v">${fmt(s.start)}</span></label>
-        <input type="number" id="sub-start" step="0.1" min="0" value="${s.start.toFixed(2)}"></div>
-      <div class="row"><label>종료<span class="v">${fmt(s.end)}</span></label>
-        <input type="number" id="sub-end" step="0.1" min="0" value="${s.end.toFixed(2)}"></div>
-    </div>
-    ${sliderRow('sub-size','글자 크기',16,140,1,st.size,'',54)}
-    <div class="grid2">
-      <div class="row"><label>글자색</label><input type="color" id="sub-color" value="${st.color}"></div>
-      <div class="row"><label>외곽선색</label><input type="color" id="sub-stroke" value="${st.stroke}"></div>
-    </div>
-    ${sliderRow('sub-sw','외곽선 두께',0,12,0.5,st.strokeWidth,'',4)}
-    <div class="row"><label class="check"><input type="checkbox" id="sub-bg" ${st.bg?'checked':''}> 배경 박스</label></div>
-    ${sliderRow('sub-bgo','배경 불투명도',0,100,1,st.bgOpacity,'%',55)}
-    <div class="row"><label>세로 위치</label><div class="seg" id="sub-pos">
-      <button data-v="top" class="${st.pos==='top'?'on':''}">상</button>
-      <button data-v="middle" class="${st.pos==='middle'?'on':''}">중</button>
-      <button data-v="bottom" class="${st.pos==='bottom'?'on':''}">하</button>
-    </div></div>
-    <div class="row"><label>정렬</label><div class="seg" id="sub-align">
-      <button data-v="left" class="${st.align==='left'?'on':''}">왼쪽</button>
-      <button data-v="center" class="${st.align==='center'?'on':''}">가운데</button>
-      <button data-v="right" class="${st.align==='right'?'on':''}">오른쪽</button>
-    </div></div>
-    <div class="row"><div class="seg" id="sub-style">
-      <button data-v="bold" class="${st.bold?'on':''}" style="font-weight:700">굵게</button>
-      <button data-v="italic" class="${st.italic?'on':''}" style="font-style:italic">기울임</button>
-    </div></div>
-    <div class="grid2"><button id="sub-del">자막 삭제</button>
-      <button id="sub-goto">위치로 이동</button></div>
+    <div class="row"><label>텍스트</label><textarea id="sub-text" rows="3">${esc(s.text)}</textarea></div>
+    ${rangeRow(s)}
+    <div class="grid2"><button id="sub-del">자막 삭제</button><button id="sub-goto">이 구간으로 이동</button></div>
+  </div>
+  <div class="block sections">
+    ${sec('preset', '스타일 프리셋',
+      `<div class="presets">${presets}</div>
+       <button id="sub-applyall" style="width:100%;margin-top:8px">이 스타일을 모든 자막에 적용</button>`)}
+    ${sec('font', '글꼴 · 색',
+      `<div class="row"><label>글꼴</label><select id="sub-font">${fontOpts}</select></div>
+       <div class="hint" style="margin:-4px 0 10px">이 기기에 설치된 글꼴로 표시됩니다.</div>
+       ${sliderRow('sub-size','글자 크기',16,160,1,st.size,'',54)}
+       <div class="grid2">${colorRow('sub-color','글자색',st.color)}${colorRow('sub-stroke','외곽선색',st.stroke)}</div>
+       ${sliderRow('sub-sw','외곽선 두께',0,14,0.5,st.strokeWidth,'',4)}
+       ${checkRow('sub-grad','그라데이션 글자색',st.gradient)}
+       ${colorRow('sub-color2','아래쪽 색',st.color2)}
+       ${sliderRow('sub-sp','자간',-4,20,0.5,st.spacing,'',0)}
+       <div class="row">${segHtml('sub-style', [['bold','굵게'],['italic','기울임']], '')}</div>`)}
+    ${sec('fx', '그림자 · 글로우 · 배경',
+      `${checkRow('sub-sh','그림자',st.shadow)}
+       ${colorRow('sub-shc','그림자 색',st.shadowColor)}
+       ${sliderRow('sub-shb','흐림',0,30,1,st.shadowBlur,'',6)}
+       ${sliderRow('sub-shx','가로 거리',-20,20,1,st.shadowX,'',3)}
+       ${sliderRow('sub-shy','세로 거리',-20,20,1,st.shadowY,'',3)}
+       ${checkRow('sub-gl','글로우 (네온)',st.glow)}
+       ${colorRow('sub-glc','글로우 색',st.glowColor)}
+       ${sliderRow('sub-glb','글로우 크기',0,60,1,st.glowBlur,'',18)}
+       ${checkRow('sub-bg','배경 박스',st.bg)}
+       ${colorRow('sub-bgc','배경 색',st.bgColor)}
+       ${sliderRow('sub-bgo','배경 불투명도',0,100,1,st.bgOpacity,'%',55)}`)}
+    ${sec('pos', '위치 · 정렬',
+      `<div class="hint" style="margin:0 0 10px"><b>미리보기 화면에서 자막을 마우스로 끌어</b> 원하는 곳에 놓으세요.
+         화면 가운데 근처에서는 붉은 가이드선에 붙습니다. 재생헤드가 이 자막 구간 안에 있어야 화면에 보입니다.</div>
+       <div class="row"><label>현재 위치<span class="v">${custom ? `직접 지정 (${Math.round(st.x * 100)}%, ${Math.round(st.y * 100)}%)` : '자동 배치'}</span></label>
+         <button id="sub-resetpos" style="width:100%" ${custom ? '' : 'disabled'}>자동 배치로 되돌리기</button></div>
+       <div class="row"><label>자동 배치 위치</label>${segHtml('sub-pos', [['top','상'],['middle','중'],['bottom','하']], custom ? '' : st.pos)}</div>
+       <div class="row"><label>글자 정렬</label>${segHtml('sub-align', [['left','왼쪽'],['center','가운데'],['right','오른쪽']], st.align)}</div>`)}
+    ${sec('anim', '등장 애니메이션',
+      `<div class="chips">${anims}</div>
+       <div class="hint">페이드는 등장·퇴장 모두, 나머지는 등장할 때만 적용됩니다.</div>`)}
   </div>`;
 }
 function syncInspectorValues(){
   const a = project.adjustments;
   const set = (id, v, unit) => {
-    const r = inspector.querySelector('#' + id), n = inspector.querySelector('#' + id + '-n'),
-          o = inspector.querySelector(`[data-out="${id}"]`);
+    const r = $i(id), n = $i(id + '-n'), o = inspector.querySelector(`[data-out="${id}"]`);
     if (r && document.activeElement !== r) r.value = v;
     if (n && document.activeElement !== n) n.value = v;
     if (o) o.textContent = v + (unit || '');
@@ -1186,8 +1469,8 @@ function syncInspectorValues(){
   set('adj-vignette', a.vignette, '%');
 }
 function bindSlider(id, unit, apply){
-  const r = inspector.querySelector('#' + id);
-  const n = inspector.querySelector('#' + id + '-n');
+  const r = $i(id);
+  const n = $i(id + '-n');
   const o = inspector.querySelector(`[data-out="${id}"]`);
   if (!r) return;
   const commit = v => {
@@ -1205,6 +1488,38 @@ function bindSlider(id, unit, apply){
   const lab = r.closest('.row').querySelector('label');
   lab.addEventListener('dblclick', () => { commit(r.dataset.def); pushHistory(); });
 }
+function bindSeg(sel, cb){
+  const wrap = inspector.querySelector(sel);
+  if (!wrap) return;
+  wrap.querySelectorAll('button').forEach(b => { b.onclick = () => cb(b.dataset.v); });
+}
+function bindColor(id, apply){
+  const el = $i(id);
+  if (!el) return;
+  el.addEventListener('input', e => apply(e.target.value));
+  el.addEventListener('change', () => pushHistory());
+}
+function bindCheck(id, apply){
+  const el = $i(id);
+  if (!el) return;
+  el.addEventListener('change', e => { apply(e.target.checked); pushHistory(); });
+}
+// 자막과 효과는 둘 다 [start, end] 구간이라 시간 입력 처리를 공유한다.
+function bindRange(it, capToTotal){
+  const sEl = $i('rg-start'), eEl = $i('rg-end');
+  if (!sEl || !eEl) return;
+  sEl.addEventListener('change', () => {
+    it.start = clamp(Number(sEl.value) || 0, 0, Math.max(it.end - 0.1, 0));
+    sortRanges(); pushHistory(); refreshAll();
+  });
+  eEl.addEventListener('change', () => {
+    let v = Math.max(Number(eEl.value) || 0, it.start + 0.1);
+    if (capToTotal) v = Math.min(v, Math.max(totalDur(), it.start + 0.1));
+    it.end = v;
+    sortRanges(); pushHistory(); refreshAll();
+  });
+}
+
 function bindInspector(){
   const A = project.adjustments;
   bindSlider('adj-brightness','%', v => A.brightness = v);
@@ -1212,80 +1527,102 @@ function bindInspector(){
   bindSlider('adj-saturation','%', v => A.saturation = v);
   bindSlider('adj-temperature','', v => A.temperature = v);
   bindSlider('adj-vignette','%',   v => A.vignette = v);
+  inspector.querySelectorAll('[data-addfx]').forEach(ch => { ch.onclick = () => addEffect(ch.dataset.addfx); });
+  inspector.querySelectorAll('details.sec').forEach(d => {
+    d.addEventListener('toggle', () => { secOpen[d.dataset.sec] = d.open; });
+  });
 
   if (selection.type === 'clip'){
     const c = findClip(selection.id);
     if (!c) return;
     bindSlider('clip-speed','x', v => { c.speed = clamp(v, 0.25, 4); renderTimeline(); updateTransport(); });
-    inspector.querySelector('#clip-split').onclick = () => {
+    $i('clip-split').onclick = () => {
       const st = clipStartOf(project.clips.indexOf(c));
       if (playhead <= st || playhead >= st + clipDur(c)) seekTo(st + clipDur(c) / 2);
       splitAtPlayhead();
     };
-    inspector.querySelector('#clip-del').onclick = deleteSelected;
+    $i('clip-del').onclick = deleteSelected;
+  }
 
-    inspector.querySelectorAll('[data-fx]').forEach(chip => {
-      chip.onclick = () => {
-        const type = chip.dataset.fx;
-        const i = c.effects.findIndex(e => e.type === type);
-        if (i >= 0) c.effects.splice(i, 1);
-        else {
-          const def = EFFECTS.find(e => e.type === type).def;
-          c.effects.push({ type, ...JSON.parse(JSON.stringify(def)) });
-        }
-        pushHistory();
-        renderInspector(true);
-      };
-    });
-    const m = fxMap(c);
-    if (m.fadeIn)  bindSlider('fx-fadeIn','초', v => m.fadeIn.dur = v);
-    if (m.fadeOut) bindSlider('fx-fadeOut','초', v => m.fadeOut.dur = v);
-    if (m.blur)    bindSlider('fx-blur','px',   v => m.blur.amount = v);
-    if (m.kenburns){
-      bindSlider('fx-kbzoom','x', v => m.kenburns.zoom = v);
-      bindSeg('#kb-dir', v => { m.kenburns.dir = v; pushHistory(); renderInspector(true); });
-    }
-    if (m.shake) bindSeg('#shake-lv', v => { m.shake.level = v; pushHistory(); renderInspector(true); });
+  if (selection.type === 'effect'){
+    const e = findEffect(selection.id);
+    if (!e) return;
+    bindRange(e, true);
+    bindSlider('fx-blur','px', v => e.amount = v);
+    bindSlider('fx-kbzoom','x', v => e.zoom = v);
+    bindSeg('#kb-dir',   v => { e.dir = v;   pushHistory(); renderInspector(true); });
+    bindSeg('#shake-lv', v => { e.level = v; pushHistory(); renderInspector(true); });
+    $i('fx-fit').onclick = () => {
+      const loc = locate((e.start + e.end) / 2);
+      if (!loc) return;
+      e.start = loc.start; e.end = loc.start + loc.dur;
+      sortRanges(); pushHistory(); refreshAll();
+    };
+    $i('fx-del').onclick = deleteSelected;
   }
 
   if (selection.type === 'subtitle'){
     const s = findSub(selection.id);
     if (!s) return;
     const st = s.style;
-    const ta = inspector.querySelector('#sub-text');
+    const ta = $i('sub-text');
     ta.addEventListener('input', () => { s.text = ta.value; renderTimeline(); });
     ta.addEventListener('change', () => pushHistory());
+    bindRange(s, false);
 
-    const sEl = inspector.querySelector('#sub-start'), eEl = inspector.querySelector('#sub-end');
-    sEl.addEventListener('change', () => {
-      s.start = clamp(Number(sEl.value) || 0, 0, Math.max(s.end - 0.1, 0));
-      sEl.value = s.start.toFixed(2); pushHistory(); refreshAll();
+    inspector.querySelectorAll('[data-preset]').forEach(b => {
+      b.onclick = () => {
+        applyPreset(st, SUB_PRESETS.find(p => p.id === b.dataset.preset));
+        pushHistory(); renderInspector(true);
+      };
     });
-    eEl.addEventListener('change', () => {
-      s.end = Math.max(Number(eEl.value) || 0, s.start + 0.1);
-      eEl.value = s.end.toFixed(2); pushHistory(); refreshAll();
-    });
+    $i('sub-applyall').onclick = () => {
+      let n = 0;
+      for (const o of project.subtitles){
+        if (o === s) continue;
+        const keep = { pos:o.style.pos, x:o.style.x, y:o.style.y };
+        o.style = { ...JSON.parse(JSON.stringify(st)), ...keep };
+        n++;
+      }
+      pushHistory();
+      toast(n ? `자막 ${n}개에 스타일을 적용했습니다 (위치는 유지)` : '다른 자막이 없습니다');
+    };
+
+    $i('sub-font').addEventListener('change', e => { st.font = e.target.value; pushHistory(); });
     bindSlider('sub-size','', v => st.size = v);
-    bindSlider('sub-sw','',   v => st.strokeWidth = v);
-    bindSlider('sub-bgo','%', v => st.bgOpacity = v);
-    inspector.querySelector('#sub-color').addEventListener('input', e => st.color = e.target.value);
-    inspector.querySelector('#sub-color').addEventListener('change', () => pushHistory());
-    inspector.querySelector('#sub-stroke').addEventListener('input', e => st.stroke = e.target.value);
-    inspector.querySelector('#sub-stroke').addEventListener('change', () => pushHistory());
-    inspector.querySelector('#sub-bg').addEventListener('change', e => { st.bg = e.target.checked; pushHistory(); });
-    bindSeg('#sub-pos',   v => { st.pos = v; pushHistory(); renderInspector(true); });
-    bindSeg('#sub-align', v => { st.align = v; pushHistory(); renderInspector(true); });
+    bindColor('sub-color',  v => st.color = v);
+    bindColor('sub-stroke', v => st.stroke = v);
+    bindSlider('sub-sw','', v => st.strokeWidth = v);
+    bindCheck('sub-grad', v => st.gradient = v);
+    bindColor('sub-color2', v => st.color2 = v);
+    bindSlider('sub-sp','', v => st.spacing = v);
     inspector.querySelectorAll('#sub-style button').forEach(b => {
+      b.classList.toggle('on', !!st[b.dataset.v]);
       b.onclick = () => { st[b.dataset.v] = !st[b.dataset.v]; pushHistory(); renderInspector(true); };
     });
-    inspector.querySelector('#sub-del').onclick = deleteSelected;
-    inspector.querySelector('#sub-goto').onclick = () => { seekTo(s.start + 0.01); scrollPlayheadIntoView(); };
+
+    bindCheck('sub-sh', v => st.shadow = v);
+    bindColor('sub-shc', v => st.shadowColor = v);
+    bindSlider('sub-shb','', v => st.shadowBlur = v);
+    bindSlider('sub-shx','', v => st.shadowX = v);
+    bindSlider('sub-shy','', v => st.shadowY = v);
+    bindCheck('sub-gl', v => st.glow = v);
+    bindColor('sub-glc', v => st.glowColor = v);
+    bindSlider('sub-glb','', v => st.glowBlur = v);
+    bindCheck('sub-bg', v => st.bg = v);
+    bindColor('sub-bgc', v => st.bgColor = v);
+    bindSlider('sub-bgo','%', v => st.bgOpacity = v);
+
+    bindSeg('#sub-pos',   v => { st.pos = v; st.x = st.y = null; pushHistory(); renderInspector(true); });
+    bindSeg('#sub-align', v => { st.align = v; pushHistory(); renderInspector(true); });
+    $i('sub-resetpos').onclick = () => { st.x = st.y = null; pushHistory(); renderInspector(true); };
+    inspector.querySelectorAll('[data-anim]').forEach(ch => {
+      ch.onclick = () => { st.anim = ch.dataset.anim; pushHistory(); renderInspector(true); };
+    });
+
+    $i('sub-del').onclick = deleteSelected;
+    $i('sub-goto').onclick = () => { seekTo(s.start + 0.01); scrollPlayheadIntoView(); };
   }
-}
-function bindSeg(sel, cb){
-  const wrap = inspector.querySelector(sel);
-  if (!wrap) return;
-  wrap.querySelectorAll('button').forEach(b => { b.onclick = () => cb(b.dataset.v); });
 }
 
 /* ═══ 타임라인 상호작용 ═══ */
@@ -1362,35 +1699,48 @@ laneClips.addEventListener('pointerdown', e => {
   el.addEventListener('pointerup', up);
 });
 
-laneSubs.addEventListener('pointerdown', e => {
-  if (exporting) return;
-  const el = e.target.closest('.sub');
-  if (!el) return;
-  const s = findSub(el.dataset.id);
-  if (!s) return;
-  select('subtitle', s.id);
-  const edge = e.target.dataset.edge;
-  const startX = e.clientX, st0 = s.start, en0 = s.end;
-  el.setPointerCapture(e.pointerId);
-  const move = ev => {
-    const d = (ev.clientX - startX) / pxPerSec;
-    if (edge === 'l')      s.start = clamp(st0 + d, 0, en0 - 0.1);
-    else if (edge === 'r') s.end   = Math.max(en0 + d, st0 + 0.1);
-    else {
-      const len = en0 - st0;
-      s.start = Math.max(0, st0 + d);
-      s.end = s.start + len;
-    }
-    renderTimeline(); renderInspector(true);
-  };
-  const up = () => {
-    el.removeEventListener('pointermove', move); el.removeEventListener('pointerup', up);
-    project.subtitles.sort((a, b) => a.start - b.start);
-    pushHistory(); refreshAll();
-  };
-  el.addEventListener('pointermove', move);
-  el.addEventListener('pointerup', up);
-});
+function bindRangeLane(lane, sel, finder, type, capToTotal){
+  lane.addEventListener('pointerdown', e => {
+    if (exporting) return;
+    const el = e.target.closest(sel);
+    if (!el) return;
+    const it = finder(el.dataset.id);
+    if (!it) return;
+    select(type, it.id);
+    const edge = e.target.dataset.edge;
+    const startX = e.clientX, st0 = it.start, en0 = it.end;
+    let moved = false;
+    try { el.setPointerCapture(e.pointerId); } catch(_){}
+    const move = ev => {
+      if (Math.abs(ev.clientX - startX) > 2) moved = true;
+      if (!moved) return;
+      const d = (ev.clientX - startX) / pxPerSec;
+      const T = capToTotal ? Math.max(totalDur(), 0.1) : Infinity;   // 효과는 영상 길이 밖으로 못 나간다
+      if (edge === 'l')      it.start = clamp(st0 + d, 0, en0 - 0.1);
+      else if (edge === 'r') it.end   = clamp(en0 + d, st0 + 0.1, Math.max(T, st0 + 0.1));
+      else {
+        const len = en0 - st0;
+        it.start = clamp(st0 + d, 0, Math.max(T - len, 0));
+        it.end = it.start + len;
+      }
+      renderTimeline(); renderInspector(true);
+    };
+    const up = () => {
+      el.removeEventListener('pointermove', move); el.removeEventListener('pointerup', up);
+      if (moved){ sortRanges(); pushHistory(); }   // 클릭만 한 건 되돌릴 이력을 만들지 않는다
+      // 자막은 재생헤드가 구간 안에 있어야 화면에서 마우스로 끌 수 있으니 자동으로 데려간다.
+      if (type === 'subtitle' && !(playhead >= it.start && playhead < it.end)) seekTo(it.start + 0.01);
+      refreshAll();
+    };
+    el.addEventListener('pointermove', move);
+    el.addEventListener('pointerup', up);
+  });
+}
+bindRangeLane(laneFx,   '.fx',  findEffect, 'effect',   true);
+bindRangeLane(laneSubs, '.sub', findSub,    'subtitle', false);
+
+// 세로 스크롤이 생겨도 눈금자는 위에 고정한다.
+tlScroll.addEventListener('scroll', () => { ruler.style.transform = `translateY(${tlScroll.scrollTop}px)`; });
 
 tlScroll.addEventListener('wheel', e => {
   if (!(e.ctrlKey || e.metaKey)) return;
@@ -1636,7 +1986,63 @@ $('#zoom').addEventListener('input', e => {
   zoomTouched = true;
   renderTimeline(); updateTransport();
 });
-canvas.addEventListener('click', togglePlay);
+
+/* 프리뷰 위 자막을 마우스로 끌어 옮긴다.
+   좌표는 캔버스 픽셀이 아니라 0~1 비율로 저장하므로 프리뷰(1280px)와 내보내기(1080p 등)에서
+   같은 자리에 찍힌다. 자막을 안 잡은 클릭은 예전처럼 재생/정지 토글이다. */
+let subDrag = null, suppressClick = false;
+const canvasNorm = e => {
+  const r = canvas.getBoundingClientRect();
+  return { x:(e.clientX - r.left) / r.width, y:(e.clientY - r.top) / r.height };
+};
+const hitSub = p => {
+  for (let i = subRects.length - 1; i >= 0; i--){   // 위에 그려진 자막이 우선
+    const r = subRects[i];
+    if (p.x >= r.x && p.x <= r.x + r.w && p.y >= r.y && p.y <= r.y + r.h) return r;
+  }
+  return null;
+};
+canvas.addEventListener('pointerdown', e => {
+  if (exporting || e.button > 0) return;
+  const hit = hitSub(canvasNorm(e));
+  suppressClick = !!hit;
+  if (!hit) return;
+  const s = findSub(hit.id);
+  if (!s) return;
+  if (!(selection.type === 'subtitle' && selection.id === s.id)) select('subtitle', s.id);
+  subDrag = { s, p0:canvasNorm(e), c0:{ x:e.clientX, y:e.clientY }, cx:hit.x + hit.w / 2, cy:hit.y + hit.h / 2,
+              hw:hit.w / 2, hh:hit.h / 2, moved:false };
+  try { canvas.setPointerCapture(e.pointerId); } catch(_){}
+  e.preventDefault();
+});
+canvas.addEventListener('pointermove', e => {
+  const p = canvasNorm(e);
+  if (!subDrag){ canvas.style.cursor = !exporting && hitSub(p) ? 'move' : ''; return; }
+  if (!subDrag.moved && Math.hypot(e.clientX - subDrag.c0.x, e.clientY - subDrag.c0.y) < 4) return;
+  subDrag.moved = true;
+  canvas.style.cursor = 'grabbing';
+  // 블록이 화면 밖으로 나가지 않게, 중심이 (반폭 ~ 1-반폭) 안에 머물도록 제한한다.
+  let x = clamp(subDrag.cx + (p.x - subDrag.p0.x), Math.min(subDrag.hw, 0.5), Math.max(1 - subDrag.hw, 0.5));
+  let y = clamp(subDrag.cy + (p.y - subDrag.p0.y), Math.min(subDrag.hh, 0.5), Math.max(1 - subDrag.hh, 0.5));
+  const g = { x:false, y:false };
+  if (Math.abs(x - 0.5) < 0.015){ x = 0.5; g.x = true; }
+  if (Math.abs(y - 0.5) < 0.015){ y = 0.5; g.y = true; }
+  subGuide = g;
+  subDrag.s.style.x = x; subDrag.s.style.y = y;
+});
+const endSubDrag = () => {
+  if (!subDrag) return;
+  const moved = subDrag.moved;
+  subDrag = null; subGuide = null;
+  canvas.style.cursor = '';
+  if (moved){ pushHistory(); renderInspector(true); }
+};
+canvas.addEventListener('pointerup', endSubDrag);
+canvas.addEventListener('pointercancel', endSubDrag);
+canvas.addEventListener('click', () => {
+  if (suppressClick){ suppressClick = false; return; }
+  togglePlay();
+});
 window.addEventListener('resize', () => { if (!zoomTouched) fitZoom(); renderTimeline(); updateTransport(); });
 scrim.addEventListener('click', e => { if (e.target === scrim && !exporting) closeModal(); });
 
