@@ -1,0 +1,11 @@
+# OS
+Thumbs.db
+desktop.ini
+.DS_Store
+
+# 편집 중 생기는 임시 파일
+*.tmp
+*.webm
+*.mp4
+*.mov
+*.srt
